@@ -1,11 +1,12 @@
  <template>
- <div style="height: 700px; width: 100%">
+ <div style="height: 700px; width: 100%;position:relative">
     <l-map
     ref="map"
       v-if="showMap"
       :zoom="zoom"
       :center="center"
       :options="mapOptions"
+      :doubleClickZoom="false"
       style="height: 80%"
     >
       <l-tile-layer
@@ -13,6 +14,10 @@
       />
 
     </l-map>
+    <div class="alert" v-show="isShow" :style="{top:`${top}px`,left:`${left}px`}">
+      <div style="display:flex;justify-content:flex-end"><span @click="close()" style="cursor:pointer">X</span></div>
+      <div>hello,{{id}}</div>
+      </div>
   </div>
 </template>
 
@@ -40,7 +45,11 @@ export default {
       },
       showMap: true,
       mapObj:'',
-      ciLayer:''
+      ciLayer:'',
+      isShow:false,
+      top:0,
+      left:0,
+      id:0
     };
   },
   mounted(){
@@ -55,9 +64,25 @@ export default {
     this.ciLayer = L.canvasIconLayer({}).addTo(this.mapObj);
     const xy = this.getboundary();
     const data = generateData(...xy);
+    this.ciLayer.addOnClickListener((e, data) => {
+      console.log({e});
+        const id = data[0].data.options.diyId;
+        console.log('id', id);
+        this.detailsOpen(e,id);
+      });
     this.draw(data);
   },
   methods: {
+    close(){
+      this.isShow=false;
+    },
+    detailsOpen(e, id){
+      const point =e.layerPoint;
+      this.isShow=true;
+      this.top = point.y;
+      this.left = point.x;
+      this.id = id;
+    },
     //获取边界坐标，返回格式[left,right,top,bottom];
     getboundary(){
       const leftdownLng = this.$refs.map.mapObject.getBounds().getSouthWest()
@@ -71,7 +96,7 @@ export default {
         return [leftdownLat,rightupLat,leftdownLng,rightupLng];
     },
     map_drag(){
-      const xy = this.getboundary();
+    const xy = this.getboundary();
     const data = generateData(...xy);
     this.draw(data);
     },
@@ -95,14 +120,18 @@ export default {
         });
       });
       this.ciLayer.addLayers(markers);
-    },
-
-    showLongText() {
-      this.showParagraph = !this.showParagraph;
-    },
-    innerClick() {
-      alert("Click!");
     }
   }
 };
 </script>
+<style scoped>
+  .alert{
+    position:absolute;
+    width:200px;
+    height:200px;
+    background-color:white;
+    z-index: 99999;
+   
+  }
+
+</style>
